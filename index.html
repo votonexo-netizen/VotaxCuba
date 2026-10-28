@@ -1,113 +1,190 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Consulta ciudadana de demostración sobre el futuro de Cuba.">
-  <title>VotaxCuba — Consulta ciudadana</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Encuesta de opinión sobre el futuro de Cuba.">
+  <title>VotaXCuba - Encuesta de opinión</title>
   <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
 </head>
 <body>
-<header class="site-header">
-  <h1>VotaxCuba</h1>
-  <p>Un espacio para expresar ideas sobre el futuro de Cuba</p>
-</header>
+  <header class="site-header">
+    <h1>VotaXCuba</h1>
+    <p>Tu opinión cuenta. Exprésate con respeto.</p>
+  </header>
 
-<main class="container">
-  <section class="panel" id="inicio">
-    <h2>¿Qué deseas para el futuro de Cuba?</h2>
-    <p>Lee ambas propuestas y expresa tu opinión libremente.</p>
+  <main class="container">
+    <section id="identity-section" class="panel">
+      <h2>Antes de comenzar</h2>
 
-    <div class="options-preview">
-      <article class="option-card red-card">
-        <h3>Opción roja</h3>
-        <p>Continuar con el Gobierno fundado por Fidel Castro.</p>
-        <p>Desea luchar contra el bloqueo de Estados Unidos a Cuba y defender los ideales de los líderes cubanos.</p>
-      </article>
-      <article class="option-card blue-card">
-        <h3>Opción azul</h3>
-        <p>Un nuevo Gobierno cubano fundado por cubanos con ayuda de Estados Unidos.</p>
-        <p>Desea un cambio de Gobierno y solicita cooperación internacional para conseguirlo.</p>
-      </article>
-    </div>
+      <p class="privacy-notice">
+        <strong>Protege tu privacidad:</strong> no escribas contraseñas,
+        direcciones, teléfonos ni otros datos personales en tus respuestas
+        de opinión. Tu nombre y el código de esta pantalla no deben incluirse
+        en las opiniones públicas.
+      </p>
 
-    <button id="comenzar" class="primary">¿Deseas participar?</button>
-    <p class="notice">Prototipo de consulta: las respuestas de esta versión se guardan únicamente en este navegador y no constituyen resultados oficiales.</p>
-  </section>
+      <form id="identity-form">
+        <label for="first-name">Nombre</label>
+        <input
+          id="first-name"
+          name="firstName"
+          type="text"
+          autocomplete="given-name"
+          maxlength="60"
+          required
+        >
 
-  <section class="panel hidden" id="formulario">
-    <h2>Tu opinión</h2>
-    <p>Esta demostración no solicita nombre, carnet ni otros identificadores.</p>
-    <form id="datosForm">
-      <label for="fecha">Fecha de nacimiento (opcional)</label>
-      <input id="fecha" type="date">
-      <p id="prefijoFecha" class="help" aria-live="polite"></p>
-      <p class="help">El prefijo mostrado es una demostración del formato de fecha; no verifica ni acredita una identidad.</p>
-      <button class="primary" type="submit">Continuar</button>
-    </form>
-  </section>
+        <label for="last-name">Apellidos</label>
+        <input
+          id="last-name"
+          name="lastName"
+          type="text"
+          autocomplete="family-name"
+          maxlength="100"
+          required
+        >
 
-  <section class="panel hidden" id="opciones">
-    <h2>Selecciona una opción</h2>
-    <div class="options-preview">
-      <button class="option-card red-card pick" data-option="rojo">
-        <strong>Elegir rojo</strong>
-        <span>Continuidad del Gobierno actual y defensa de sus ideales.</span>
-      </button>
-      <button class="option-card blue-card pick" data-option="azul">
-        <strong>Elegir azul</strong>
-        <span>Cambio de Gobierno y cooperación internacional.</span>
-      </button>
-    </div>
-  </section>
+        <label for="birth-date">Fecha de nacimiento</label>
+        <input
+          id="birth-date"
+          name="birthDate"
+          type="date"
+          required
+        >
 
-  <section class="panel hidden" id="preguntas">
-    <h2 id="tituloPreguntas">Preguntas</h2>
-    <p id="introPreguntas"></p>
-    <form id="preguntasForm">
-      <div id="camposPreguntas"></div>
-      <label class="consent">
-        <input id="consentirPublicacion" type="checkbox">
-        Autorizo que mi declaración, sin datos identificativos, aparezca en la sección pública de esta demostración.
-      </label>
-      <button class="primary" type="submit">Crear mi declaración</button>
-    </form>
-  </section>
+        <div id="code-section" class="code-section" hidden>
+          <label for="code-prefix">Código generado (primeros 6 dígitos)</label>
+          <input
+            id="code-prefix"
+            type="text"
+            readonly
+            aria-describedby="code-help"
+          >
 
-  <section class="panel hidden" id="resultado" aria-live="polite">
-    <h2>Tu declaración</h2>
-    <blockquote id="declaracionPrevia"></blockquote>
-    <p id="estadoPublicacion" class="help"></p>
-    <button id="volver" class="primary">Volver al inicio</button>
-  </section>
+          <p id="code-help" class="help-text">
+            Se forma con los dos últimos dígitos del año, el mes y el día.
+          </p>
 
-  <section class="panel results">
-    <h2>Participación de demostración</h2>
-    <p id="totalVotos">0 participaciones</p>
-    <div class="bar" role="img" aria-label="Distribución de las participaciones locales">
-      <div id="barraRoja" class="bar-red"></div>
-      <div id="barraAzul" class="bar-blue"></div>
-    </div>
-    <div class="legend">
-      <span class="red-text" id="totalRojo">Rojo: 0 (0%)</span>
-      <span class="blue-text" id="totalAzul">Azul: 0 (0%)</span>
-    </div>
+          <label for="code-suffix">Completa este código: escribe los 5 dígitos restantes</label>
+          <div class="code-entry">
+            <span id="prefix-preview" aria-hidden="true"></span>
+            <input
+              id="code-suffix"
+              name="codeSuffix"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]{5}"
+              minlength="5"
+              maxlength="5"
+              placeholder="00000"
+              autocomplete="off"
+              required
+            >
+          </div>
 
-    <div class="results-buttons">
-      <button id="verRojo" class="primary red-button">Votaciones rojas</button>
-      <button id="verAzul" class="primary blue-button">Votaciones azules</button>
-    </div>
+          <p id="code-message" class="help-text" aria-live="polite">
+            Introduce exactamente 5 números.
+          </p>
+        </div>
 
-    <h3 id="tituloDeclaraciones">Declaraciones autorizadas</h3>
-    <div id="listaDeclaraciones" class="statements">
-      <p class="help">Todavía no hay declaraciones publicadas en este navegador.</p>
-    </div>
-  </section>
-</main>
+        <p id="identity-error" class="error-message" role="alert"></p>
 
-<footer>
-  <p>VotaxCuba · Consulta de demostración</p>
-</footer>
-<script src="script.js"></script>
+        <button id="continue-button" type="submit">
+          Continuar al formulario
+        </button>
+      </form>
+    </section>
+
+    <section id="survey-section" hidden>
+      <div class="panel">
+        <h2>Encuesta sobre el futuro de Cuba</h2>
+        <p>
+          Puedes expresar libremente tu opinión. Responde con tus propias
+          palabras y mantén el respeto hacia otras personas.
+        </p>
+        <p class="privacy-notice">
+          No incluyas tu nombre, número de identidad, dirección, teléfono
+          ni información que permita identificarte.
+        </p>
+      </div>
+
+      <section class="panel">
+        <h3>Selecciona la opción que deseas expresar</h3>
+
+        <div class="choice-grid">
+          <label class="choice-card red-choice">
+            <input type="radio" name="position" value="red" required>
+            <span>
+              <strong>Continuar con el Gobierno actual</strong>
+              <small>
+                Deseo defender la continuidad del sistema actual y sus ideales,
+                y enfrentar las dificultades de Cuba.
+              </small>
+            </span>
+          </label>
+
+          <label class="choice-card blue-choice">
+            <input type="radio" name="position" value="blue" required>
+            <span>
+              <strong>Un nuevo Gobierno cubano</strong>
+              <small>
+                Deseo un cambio de gobierno y explorar nuevas alternativas
+                para el futuro del país.
+              </small>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <form id="survey-form" class="panel">
+        <h3>Comparte tu opinión</h3>
+        <p class="privacy-notice">
+          No escribas datos personales. Cada respuesta puede tener hasta
+          500 caracteres.
+        </p>
+
+        <div id="questions-container"></div>
+
+        <button type="submit">Enviar opiniones</button>
+        <p id="survey-message" role="status" aria-live="polite"></p>
+      </form>
+
+      <section class="panel">
+        <h3>Resultados de esta sesión</h3>
+        <p class="help-text">
+          Este gráfico refleja únicamente los votos guardados en este navegador,
+          no el total de votos de Internet.
+        </p>
+        <div
+          id="results-bar"
+          class="results-bar"
+          role="img"
+          aria-label="Distribución de votos locales"
+        >
+          <div id="red-bar" class="bar-red"></div>
+          <div id="blue-bar" class="bar-blue"></div>
+        </div>
+        <div class="results-labels">
+          <span id="red-result">Continuidad: 0 (0%)</span>
+          <span id="blue-result">Cambio: 0 (0%)</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Opiniones publicadas en este navegador</h3>
+        <p class="help-text">
+          Solo se muestran las opiniones de prueba guardadas localmente.
+          No se envían a un servidor.
+        </p>
+        <div id="public-opinions"></div>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <p>VotaXCuba · Encuesta de opinión</p>
+  </footer>
 </body>
-</html>
+          </html>
