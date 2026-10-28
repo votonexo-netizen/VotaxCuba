@@ -1,90 +1,113 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VotaxCuba | Consulta ciudadana</title>
+  <meta name="description" content="Consulta ciudadana de demostración sobre el futuro de Cuba.">
+  <title>VotaxCuba — Consulta ciudadana</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="header">
-    <h1>VotaxCuba</h1>
-    <p>Portal de consulta digital</p>
-  </header>
+<header class="site-header">
+  <h1>VotaxCuba</h1>
+  <p>Un espacio para expresar ideas sobre el futuro de Cuba</p>
+</header>
 
-  <main class="container">
-    <section id="inicio" class="panel">
-      <h2>Tu opinión importa</h2>
-      <p>Participa en esta consulta de demostración.</p>
-      <button id="comenzar" class="primary">¿Deseas votar?</button>
-      <p class="notice">Demostración: no se recopilan carnets ni se registra un voto oficial.</p>
-    </section>
+<main class="container">
+  <section class="panel" id="inicio">
+    <h2>¿Qué deseas para el futuro de Cuba?</h2>
+    <p>Lee ambas propuestas y expresa tu opinión libremente.</p>
 
-    <section id="formulario" class="panel hidden">
-      <h2>Datos de demostración</h2>
-      <p>Usa datos ficticios. No introduzcas información personal real.</p>
+    <div class="options-preview">
+      <article class="option-card red-card">
+        <h3>Opción roja</h3>
+        <p>Continuar con el Gobierno fundado por Fidel Castro.</p>
+        <p>Desea luchar contra el bloqueo de Estados Unidos a Cuba y defender los ideales de los líderes cubanos.</p>
+      </article>
+      <article class="option-card blue-card">
+        <h3>Opción azul</h3>
+        <p>Un nuevo Gobierno cubano fundado por cubanos con ayuda de Estados Unidos.</p>
+        <p>Desea un cambio de Gobierno y solicita cooperación internacional para conseguirlo.</p>
+      </article>
+    </div>
 
-      <form id="datosForm">
-        <label for="nombre">Nombre</label>
-        <input id="nombre" required maxlength="60" autocomplete="off">
+    <button id="comenzar" class="primary">¿Deseas participar?</button>
+    <p class="notice">Prototipo de consulta: las respuestas de esta versión se guardan únicamente en este navegador y no constituyen resultados oficiales.</p>
+  </section>
 
-        <label for="apellidos">Apellidos</label>
-        <input id="apellidos" required maxlength="100" autocomplete="off">
+  <section class="panel hidden" id="formulario">
+    <h2>Tu opinión</h2>
+    <p>Esta demostración no solicita nombre, carnet ni otros identificadores.</p>
+    <form id="datosForm">
+      <label for="fecha">Fecha de nacimiento (opcional)</label>
+      <input id="fecha" type="date">
+      <p id="prefijoFecha" class="help" aria-live="polite"></p>
+      <p class="help">El prefijo mostrado es una demostración del formato de fecha; no verifica ni acredita una identidad.</p>
+      <button class="primary" type="submit">Continuar</button>
+    </form>
+  </section>
 
-        <label for="fecha">Fecha de nacimiento</label>
-        <input id="fecha" type="date" required>
+  <section class="panel hidden" id="opciones">
+    <h2>Selecciona una opción</h2>
+    <div class="options-preview">
+      <button class="option-card red-card pick" data-option="rojo">
+        <strong>Elegir rojo</strong>
+        <span>Continuidad del Gobierno actual y defensa de sus ideales.</span>
+      </button>
+      <button class="option-card blue-card pick" data-option="azul">
+        <strong>Elegir azul</strong>
+        <span>Cambio de Gobierno y cooperación internacional.</span>
+      </button>
+    </div>
+  </section>
 
-        <p id="errorFecha" class="error" aria-live="polite"></p>
-        <button class="primary" type="submit">Continuar</button>
-      </form>
-    </section>
+  <section class="panel hidden" id="preguntas">
+    <h2 id="tituloPreguntas">Preguntas</h2>
+    <p id="introPreguntas"></p>
+    <form id="preguntasForm">
+      <div id="camposPreguntas"></div>
+      <label class="consent">
+        <input id="consentirPublicacion" type="checkbox">
+        Autorizo que mi declaración, sin datos identificativos, aparezca en la sección pública de esta demostración.
+      </label>
+      <button class="primary" type="submit">Crear mi declaración</button>
+    </form>
+  </section>
 
-    <section id="opciones" class="panel hidden">
-      <h2>Elige una opción</h2>
-      <p>Las descripciones son editables en este archivo.</p>
+  <section class="panel hidden" id="resultado" aria-live="polite">
+    <h2>Tu declaración</h2>
+    <blockquote id="declaracionPrevia"></blockquote>
+    <p id="estadoPublicacion" class="help"></p>
+    <button id="volver" class="primary">Volver al inicio</button>
+  </section>
 
-      <div class="choices">
-        <button class="choice red" data-option="rojo">
-          <strong>Opción roja</strong>
-          <span id="descripcionRoja">Aquí pondrás la descripción roja.</span>
-        </button>
+  <section class="panel results">
+    <h2>Participación de demostración</h2>
+    <p id="totalVotos">0 participaciones</p>
+    <div class="bar" role="img" aria-label="Distribución de las participaciones locales">
+      <div id="barraRoja" class="bar-red"></div>
+      <div id="barraAzul" class="bar-blue"></div>
+    </div>
+    <div class="legend">
+      <span class="red-text" id="totalRojo">Rojo: 0 (0%)</span>
+      <span class="blue-text" id="totalAzul">Azul: 0 (0%)</span>
+    </div>
 
-        <button class="choice blue" data-option="azul">
-          <strong>Opción azul</strong>
-          <span id="descripcionAzul">Aquí pondrás la descripción azul.</span>
-        </button>
-      </div>
-    </section>
+    <div class="results-buttons">
+      <button id="verRojo" class="primary red-button">Votaciones rojas</button>
+      <button id="verAzul" class="primary blue-button">Votaciones azules</button>
+    </div>
 
-    <section id="preguntas" class="panel hidden">
-      <h2>Preguntas</h2>
-      <form id="preguntasForm">
-        <label for="pregunta1">1. ¿Qué opinas de esta propuesta?</label>
-        <textarea id="pregunta1" rows="3" maxlength="1000" required></textarea>
+    <h3 id="tituloDeclaraciones">Declaraciones autorizadas</h3>
+    <div id="listaDeclaraciones" class="statements">
+      <p class="help">Todavía no hay declaraciones publicadas en este navegador.</p>
+    </div>
+  </section>
+</main>
 
-        <label for="pregunta2">2. ¿Qué cambiarías?</label>
-        <textarea id="pregunta2" rows="3" maxlength="1000" required></textarea>
-
-        <button class="primary" type="submit">Enviar demostración</button>
-      </form>
-    </section>
-
-    <section id="resultado" class="panel hidden" aria-live="polite">
-      <h2>¡Gracias por participar!</h2>
-      <p>Tu respuesta se ha contado únicamente en esta demostración local.</p>
-      <button id="volver" class="primary">Volver al inicio</button>
-    </section>
-
-    <section class="counter panel">
-      <h3>Participaciones de demostración</h3>
-      <p id="contador">0</p>
-    </section>
-  </main>
-
-  <footer>
-    <p>VotaxCuba · Prototipo de demostración</p>
-  </footer>
-
-  <script src="script.js"></script>
+<footer>
+  <p>VotaxCuba · Consulta de demostración</p>
+</footer>
+<script src="script.js"></script>
 </body>
 </html>
