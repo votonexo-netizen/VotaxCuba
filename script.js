@@ -1,4 +1,12 @@
+
 "use strict";
+
+const SUPABASE_FUNCTION_URL =
+  "https://dqylqfjevffjiyjeyfsz.supabase.co/functions/v1/registrar-voto";
+
+// La clave publishable es pública y puede usarse en el navegador.
+// Sustituye este texto por tu sb_publishable_... de Supabase.
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_VFDtlMisspOg_thRYF7iag_XvvKDqVl";
 
 const homeSection = document.getElementById("home-section");
 const identityForm = document.getElementById("identity-form");
@@ -24,9 +32,9 @@ const publicOpinions = document.getElementById("public-opinions");
 const showRedOpinionsButton = document.getElementById("show-red-opinions");
 const showBlueOpinionsButton = document.getElementById("show-blue-opinions");
 
-let currentPrefix = "";
-let localVotes = { red: 0, blue: 0 };
-let localOpinions = [];
+let selectedPosition = null;
+let currentToken = "";
+let allOpinions = [];
 
 const questions = {
   red: [
@@ -86,15 +94,21 @@ function parseDateOnly(value) {
   if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
   const [year, month, day] = parts;
   const date = new Date(year, month - 1, day);
-  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) return null;
   return date;
 }
 
 function calculateAge(birthDate) {
   const today = todayAsDate();
   let age = today.getFullYear() - birthDate.getFullYear();
-  const beforeBirthday = today.getMonth() < birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate());
+  const beforeBirthday =
+    today.getMonth() < birthDate.getMonth() ||
+    (today.getMonth() === birthDate.getMonth() &&
+      today.getDate() < birthDate.getDate());
   if (beforeBirthday) age--;
   return age;
 }
@@ -106,37 +120,42 @@ function makePrefix(date) {
 }
 
 function updateBirthDateUI() {
+  if (!birthDateInput || !codeSection) return;
   identityError.textContent = "";
-  codeSuffixInput.value = "";
-  const birthDate = parseDateOnly(birthDateInput.value);
+  if (codeSuffixInput) codeSuffixInput.value = "";
 
+  const birthDate = parseDateOnly(birthDateInput.value);
   if (!birthDate) {
     codeSection.hidden = true;
-    currentPrefix = "";
     return;
   }
 
   const age = calculateAge(birthDate);
   if (age < 16 || age > 100) {
     codeSection.hidden = true;
-    currentPrefix = "";
     identityError.textContent = "La edad debe estar entre 16 y 100 años.";
     return;
   }
 
-  currentPrefix = makePrefix(birthDate);
-  codePrefixInput.value = currentPrefix;
-  prefixPreview.textContent = currentPrefix;
+  codePrefixInput.value = makePrefix(birthDate);
+  prefixPreview.textContent = codePrefixInput.value;
   codeSection.hidden = false;
 }
 
-birthDateInput.addEventListener("change", updateBirthDateUI);
-codeSuffixInput.addEventListener("input", () => {
-  codeSuffixInput.value = codeSuffixInput.value.replace(/\D/g, "").slice(0, 5);
-  identityError.textContent = "";
-});
+if (birthDateInput) {
+  birthDateInput.addEventListener("change", updateBirthDateUI);
+}
+
+if (codeSuffixInput) {
+  codeSuffixInput.addEventListener("input", () => {
+    codeSuffixInput.value =
+      codeSuffixInput.value.replace(/\D/g, "").slice(0, 5);
+    if (identityError) identityError.textContent = "";
+  });
+}
 
 function renderQuestions(position) {
+  selectedPosition = position;
   questionsContainer.replaceChildren();
   surveyMessage.textContent = "";
 
@@ -161,6 +180,7 @@ function renderQuestions(position) {
 
     counter.className = "help-text";
     counter.textContent = "0/500 caracteres";
+
     textarea.addEventListener("input", () => {
       counter.textContent = `${textarea.value.length}/500 caracteres`;
     });
@@ -174,143 +194,235 @@ document.querySelectorAll('input[name="position"]').forEach((radio) => {
   radio.addEventListener("change", () => renderQuestions(radio.value));
 });
 
-identityForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  identityError.textContent = "";
+if (identityForm) {
+  identityForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    identityError.textContent = "";
 
-  const firstName = document.getElementById("first-name").value.trim();
-  const lastName = document.getElementById("last-name").value.trim();
-  const birthDate = parseDateOnly(birthDateInput.value);
-  const suffix = codeSuffixInput.value.trim();
-
-  if (!firstName || !lastName) {
-    identityError.textContent = "Completa tu nombre y apellidos.";
-    return;
-  }
-  if (!birthDate) {
-    identityError.textContent = "Selecciona una fecha de nacimiento válida.";
-    return;
-  }
-  if (calculateAge(birthDate) < 16 || calculateAge(birthDate) > 100) {
-    identityError.textContent = "La edad debe estar entre 16 y 100 años.";
-    return;
-  }
-  if (!currentPrefix || !/^\d{5}$/.test(suffix)) {
-    identityError.textContent = "Completa los cinco dígitos restantes del código.";
-    return;
-  }
-
-  // No se almacena ni se envía la identidad. Se cambia de pantalla.
-  homeSection.hidden = true;
-  surveySection.hidden = false;
-  surveySection.scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
-surveyForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  surveyMessage.textContent = "";
-
-  const selected = document.querySelector('input[name="position"]:checked');
-  if (!selected) {
-    surveyMessage.textContent = "Selecciona la opción roja o azul.";
-    return;
-  }
-
-  const fields = Array.from(questionsContainer.querySelectorAll("textarea"));
-  const firstEmpty = fields.find((field) => field.value.trim() === "");
-  if (fields.length !== 20 || firstEmpty) {
-    surveyMessage.textContent = "Debes responder las 20 preguntas antes de enviar.";
-    if (firstEmpty) {
-      firstEmpty.focus();
-      firstEmpty.scrollIntoView({ behavior: "smooth", block: "center" });
+    const birthDate = parseDateOnly(birthDateInput.value);
+    if (!birthDate) {
+      identityError.textContent = "Selecciona una fecha de nacimiento válida.";
+      return;
     }
-    return;
-  }
 
-  const position = selected.value;
-  const answers = fields.map((field, index) => ({
-    question: questions[position][index],
-    answer: field.value.trim()
-  }));
+    const age = calculateAge(birthDate);
+    if (age < 16 || age > 100) {
+      identityError.textContent = "La edad debe estar entre 16 y 100 años.";
+      return;
+    }
 
-  // Solo datos de opinión, sin nombre, fecha ni código de identidad.
-  localVotes[position] += 1;
-  const paragraph = answers
-    .map((item) => `${item.question} ${item.answer}`)
-    .join(" ");
-  localOpinions.push({
-    position,
-    text: `Yo pienso que ${paragraph}`
+    // La identidad no se envía ni se almacena.
+    // El token se obtiene de un proceso de verificación independiente.
+    const tokenInput = document.getElementById("participation-token");
+    currentToken = tokenInput ? tokenInput.value.trim() : "";
+
+    if (!currentToken) {
+      identityError.textContent =
+        "Para continuar hace falta un token de participación válido.";
+      return;
+    }
+
+    homeSection.hidden = true;
+    surveySection.hidden = false;
+    surveySection.scrollIntoView({ behavior: "smooth", block: "start" });
   });
-
-  updateResults();
-
-  surveyForm.reset();
-  questionsContainer.replaceChildren();
-  document.querySelectorAll('input[name="position"]').forEach((radio) => {
-    radio.checked = false;
-  });
-
-  surveySection.hidden = true;
-  homeSection.hidden = false;
-  renderPublicOpinions(null);
-  homeSection.scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
-cancelSurveyButton.addEventListener("click", () => {
-  surveyForm.reset();
-  questionsContainer.replaceChildren();
-  surveyMessage.textContent = "";
-  document.querySelectorAll('input[name="position"]').forEach((radio) => {
-    radio.checked = false;
-  });
-  surveySection.hidden = true;
-  homeSection.hidden = false;
-  homeSection.scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
-function updateResults() {
-  const total = localVotes.red + localVotes.blue;
-  const redPercent = total ? Math.round((localVotes.red / total) * 100) : 0;
-  const bluePercent = total ? 100 - redPercent : 0;
-
-  totalVotesElement.textContent = `Total de votaciones: ${total}`;
-  redBar.style.width = `${redPercent}%`;
-  blueBar.style.width = `${bluePercent}%`;
-  redResult.textContent = `Votos rojos: ${localVotes.red} (${redPercent}%)`;
-  blueResult.textContent = `Votos azules: ${localVotes.blue} (${bluePercent}%)`;
 }
 
-function renderPublicOpinions(positionFilter = null) {
+if (surveyForm) {
+  surveyForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    surveyMessage.textContent = "";
+
+    if (
+      !SUPABASE_PUBLISHABLE_KEY ||
+      SUPABASE_PUBLISHABLE_KEY === "PEGA_AQUI_TU_CLAVE_PUBLISHABLE"
+    ) {
+      surveyMessage.textContent =
+        "Falta configurar la clave publicable de Supabase.";
+      return;
+    }
+
+    const selected = document.querySelector(
+      'input[name="position"]:checked'
+    );
+
+    if (!selected) {
+      surveyMessage.textContent = "Selecciona la opción roja o azul.";
+      return;
+    }
+
+    const fields = Array.from(
+      questionsContainer.querySelectorAll("textarea")
+    );
+
+    const firstEmpty = fields.find((field) => !field.value.trim());
+
+    if (fields.length !== 20 || firstEmpty) {
+      surveyMessage.textContent =
+        "Debes responder las 20 preguntas antes de enviar.";
+      if (firstEmpty) {
+        firstEmpty.focus();
+        firstEmpty.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
+      }
+      return;
+    }
+
+    const answers = fields.map((field) => field.value.trim());
+
+    surveyMessage.textContent = "Enviando respuestas…";
+
+    try {
+      const response = await fetch(SUPABASE_FUNCTION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+        },
+        body: JSON.stringify({
+          token: currentToken,
+          respuestas: answers
+        })
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result.ok !== true) {
+        surveyMessage.textContent =
+          result.error || "No se pudieron registrar las respuestas.";
+        return;
+      }
+
+      surveyMessage.textContent =
+        "Respuestas registradas correctamente. Gracias por participar.";
+
+      surveyForm.reset();
+      questionsContainer.replaceChildren();
+      document.querySelectorAll('input[name="position"]').forEach((radio) => {
+        radio.checked = false;
+      });
+
+      currentToken = "";
+      selectedPosition = null;
+
+      await loadPublicOpinions();
+      await loadVoteCounts();
+
+      surveySection.hidden = true;
+      homeSection.hidden = false;
+      homeSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (error) {
+      console.error(error);
+      surveyMessage.textContent =
+        "No se pudo conectar con el servidor. Inténtalo más tarde.";
+    }
+  });
+}
+
+if (cancelSurveyButton) {
+  cancelSurveyButton.addEventListener("click", () => {
+    surveyForm.reset();
+    questionsContainer.replaceChildren();
+    surveyMessage.textContent = "";
+    currentToken = "";
+    selectedPosition = null;
+    surveySection.hidden = true;
+    homeSection.hidden = false;
+    homeSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+async function loadPublicOpinions(positionFilter = null) {
   publicOpinions.replaceChildren();
-  const filtered = localOpinions.filter((opinion) =>
-    !positionFilter || opinion.position === positionFilter
-  );
 
-  if (filtered.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "help-text";
-    empty.textContent = positionFilter
-      ? "Todavía no hay opiniones para esta opción."
-      : "Todavía no hay opiniones en esta sesión.";
-    publicOpinions.append(empty);
-    return;
+  try {
+    const url =
+      `${SUPABASE_FUNCTION_URL.replace("/functions/v1/registrar-voto", "")}` +
+      "/rest/v1/opiniones?select=respuestas,created_at&order=created_at.desc&limit=100";
+
+    const response = await fetch(url, {
+      headers: {
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("No se pudieron cargar las opiniones.");
+    }
+
+    const data = await response.json();
+    allOpinions = data;
+
+    const filtered = positionFilter
+      ? data.filter((item) => {
+          const firstLine = item.respuestas.split("\n")[0] || "";
+          return positionFilter === "red"
+            ? firstLine.includes("Opción roja")
+            : firstLine.includes("Opción azul");
+        })
+      : data;
+
+    if (!filtered.length) {
+      const empty = document.createElement("p");
+      empty.className = "help-text";
+      empty.textContent = "Todavía no hay opiniones públicas.";
+      publicOpinions.append(empty);
+      return;
+    }
+
+    filtered.forEach((opinion) => {
+      const card = document.createElement("article");
+      card.className = "opinion-card";
+
+      const heading = document.createElement("strong");
+      heading.textContent = "Opinión publicada";
+
+      const paragraph = document.createElement("p");
+      paragraph.textContent = opinion.respuestas;
+
+      card.append(heading, paragraph);
+      publicOpinions.append(card);
+    });
+  } catch (error) {
+    console.error(error);
+    const message = document.createElement("p");
+    message.className = "help-text";
+    message.textContent =
+      "No se pudieron cargar las opiniones públicas.";
+    publicOpinions.append(message);
   }
+}
 
-  filtered.slice().reverse().forEach((opinion) => {
-    const card = document.createElement("article");
-    card.className = "opinion-card";
-    const heading = document.createElement("strong");
-    heading.textContent = opinion.position === "red" ? "Opinión roja" : "Opinión azul";
-    const paragraph = document.createElement("p");
-    paragraph.textContent = opinion.text;
-    card.append(heading, paragraph);
-    publicOpinions.append(card);
+async function loadVoteCounts() {
+  // No se muestran cifras inventadas. Para obtener resultados reales,
+  // hace falta un endpoint agregado y público que no exponga identidades.
+  if (totalVotesElement) {
+    totalVotesElement.textContent = "Los resultados se están preparando.";
+  }
+  if (redResult) redResult.textContent = "Resultados rojos pendientes";
+  if (blueResult) blueResult.textContent = "Resultados azules pendientes";
+  if (redBar) redBar.style.width = "0%";
+  if (blueBar) blueBar.style.width = "0%";
+}
+
+if (showRedOpinionsButton) {
+  showRedOpinionsButton.addEventListener("click", () => {
+    renderQuestions("red");
+    loadPublicOpinions("red");
   });
 }
 
-showRedOpinionsButton.addEventListener("click", () => renderPublicOpinions("red"));
-showBlueOpinionsButton.addEventListener("click", () => renderPublicOpinions("blue"));
+if (showBlueOpinionsButton) {
+  showBlueOpinionsButton.addEventListener("click", () => {
+    renderQuestions("blue");
+    loadPublicOpinions("blue");
+  });
+}
 
-updateResults();
-renderPublicOpinions();
+updateBirthDateUI();
+loadPublicOpinions();
+loadVoteCounts();
