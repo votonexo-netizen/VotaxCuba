@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Encuesta de opinión sobre el futuro de Cuba">
+  <title>VotaXCuba - Encuesta de opinión</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <h1>VotaXCuba</h1>
+    <p>Tu opinión cuenta. Exprésate con respeto.</p>
+  </header>
+
+  <main class="container">
+    <!-- INICIO: datos de acceso y resultados públicos -->
+    <section id="home-section">
+      <section id="identity-section" class="panel">
+        <h2>Antes de comenzar</h2>
+        <p class="privacy-notice">
+          <strong>Protege tu privacidad:</strong> no incluyas datos personales
+          en tus opiniones. Esta demostración no envía el nombre, la fecha de
+          nacimiento ni el código a un servidor.
+        </p>
+
+        <form id="identity-form">
+          <label for="first-name">Nombre</label>
+          <input id="first-name" name="firstName" type="text"
+                 autocomplete="given-name" maxlength="60" required>
+
+          <label for="last-name">Apellidos</label>
+          <input id="last-name" name="lastName" type="text"
+                 autocomplete="family-name" maxlength="100" required>
+
+          <label for="birth-date">Fecha de nacimiento</label>
+          <input id="birth-date" name="birthDate" type="date" required>
+
+          <div id="code-section" class="code-section" hidden>
+            <label for="code-prefix">Código generado: primeros 6 dígitos</label>
+            <input id="code-prefix" type="text" readonly
+                   aria-describedby="code-help">
+
+            <p id="code-help" class="help-text">
+              Los dos últimos dígitos del año, el mes y el día.
+            </p>
+
+            <label for="code-suffix">
+              Completa este código: introduce los 5 dígitos restantes
+            </label>
+            <div class="code-entry">
+              <span id="prefix-preview" aria-hidden="true"></span>
+              <input id="code-suffix" name="codeSuffix" type="text"
+                     inputmode="numeric" pattern="[0-9]{5}"
+                     minlength="5" maxlength="5" placeholder="00000"
+                     autocomplete="off" required>
+            </div>
+            <p class="help-text">Escribe exactamente cinco números.</p>
+          </div>
+
+          <p id="identity-error" class="error-message" role="alert"></p>
+          <button type="submit">Continuar al formulario</button>
+        </form>
+      </section>
+
+      <section id="results-section" class="panel">
+        <h2>Resultados de las votaciones</h2>
+        <p id="total-votes">Total de votaciones: 0</p>
+
+        <div id="results-bar" class="results-bar" role="img"
+             aria-label="Distribución local de votos">
+          <div id="red-bar" class="bar-red"></div>
+          <div id="blue-bar" class="bar-blue"></div>
+        </div>
+
+        <div class="results-labels">
+          <span id="red-result">Votos rojos: 0 (0%)</span>
+          <span id="blue-result">Votos azules: 0 (0%)</span>
+        </div>
+
+        <div class="choice-grid results-buttons">
+          <button type="button" id="show-red-opinions">Ver opiniones rojas</button>
+          <button type="button" id="show-blue-opinions">Ver opiniones azules</button>
+        </div>
+        <div id="public-opinions" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <!-- VOTACIÓN: oculta hasta validar el formulario inicial -->
+    <section id="survey-section" hidden>
+      <section class="panel">
+        <h2>Encuesta sobre el futuro de Cuba</h2>
+        <p>Selecciona una opción. Después aparecerán sus 20 preguntas.</p>
+        <p class="privacy-notice">
+          No escribas nombres, números de identidad, direcciones ni teléfonos.
+          Cada respuesta admite hasta 500 caracteres.
+        </p>
+
+        <div class="choice-grid">
+          <label class="choice-card red-choice">
+            <input type="radio" name="position" value="red" required>
+            <span>
+              <strong>Continuar con el Gobierno actual</strong>
+              <small>Deseo defender la continuidad del sistema actual y sus ideales,
+                y enfrentar las dificultades de Cuba.</small>
+            </span>
+          </label>
+
+          <label class="choice-card blue-choice">
+            <input type="radio" name="position" value="blue" required>
+            <span>
+              <strong>Un nuevo Gobierno cubano</strong>
+              <small>Deseo un cambio de gobierno y explorar nuevas alternativas
+                para el futuro del país.</small>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <form id="survey-form" class="panel">
+        <h3>Responde las 20 preguntas</h3>
+        <p class="help-text">Todas las preguntas son obligatorias. Máximo 500 caracteres por respuesta.</p>
+        <div id="questions-container"></div>
+        <p id="survey-message" class="error-message" role="alert" aria-live="polite"></p>
+        <button type="submit">Enviar opiniones</button>
+        <button type="button" id="cancel-survey" class="secondary-button">Cancelar y volver al inicio</button>
+      </form>
+    </section>
+  </main>
+
+  <footer><p>VotaXCuba · Encuesta de opinión</p></footer>
+</body>
+</html>
