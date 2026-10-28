@@ -1,58 +1,115 @@
 
-"use strict";
+const $ = (id) => document.getElementById(id);
 
-// Configuraremos Supabase cuando creemos el proyecto.
-// No pegues aquí una clave secreta o service_role.
+const pantallas = [
+  "inicio",
+  "formulario",
+  "opciones",
+  "preguntas",
+  "resultado"
+];
 
-const SUPABASE_URL = "";
-const SUPABASE_PUBLISHABLE_KEY = "";
+let opcionElegida = null;
+let participacionesLocales = 0;
 
-let supabaseClient = null;
-
-if (
-  window.supabase &&
-  SUPABASE_URL.startsWith("https://") &&
-  SUPABASE_PUBLISHABLE_KEY.length > 0
-) {
-  supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-  );
+function mostrar(id) {
+  pantallas.forEach((pantalla) => {
+    $(pantalla).classList.toggle("hidden", pantalla !== id);
+  });
 }
 
-const form = document.getElementById("vote-form");
-const message = document.getElementById("form-message");
-const submitButton = document.getElementById("submit-vote");
+function fechaValida(valor) {
+  if (!valor) return false;
 
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
+  const partes = valor.split("-").map(Number);
+  const [anio, mes, dia] = partes;
 
-  message.textContent =
-    "La votación aún no está activa. Primero debemos configurar " +
-    "la verificación segura del código y la protección antirobot.";
+  if (partes.length !== 3) return false;
 
-  message.setAttribute("role", "status");
-});
-
-function showResults(blue, red) {
-  // Esta función se utilizará cuando conectemos resultados públicos
-  // obtenidos de una consulta segura a Supabase.
-  const blueCount = Number(blue);
-  const redCount = Number(red);
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia));
 
   if (
-    !Number.isSafeInteger(blueCount) ||
-    !Number.isSafeInteger(redCount) ||
-    blueCount < 0 ||
-    redCount < 0
+    fecha.getUTCFullYear() !== anio ||
+    fecha.getUTCMonth() !== mes - 1 ||
+    fecha.getUTCDate() !== dia
   ) {
+    return false;
+  }
+
+  const hoy = new Date();
+  const limiteSuperior = new Date(
+    Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+  );
+
+  const nacimiento = fecha.getTime();
+  const hoyUTC = limiteSuperior.getTime();
+
+  if (nacimiento > hoyUTC) return false;
+
+  let edad = hoy.getUTCFullYear() - anio;
+  const cumpleEsteAnio =
+    hoy.getUTCMonth() + 1 > mes ||
+    (hoy.getUTCMonth() + 1 === mes && hoy.getUTCDate() >= dia);
+
+  if (!cumpleEsteAnio) edad--;
+
+  return edad >= 16 && edad <= 100;
+}
+
+$("comenzar").addEventListener("click", () => {
+  const deseaVotar = window.confirm("¿Deseas participar en la demostración?");
+  if (deseaVotar) mostrar("formulario");
+});
+
+$("datosForm").addEventListener("submit", (evento) => {
+  evento.preventDefault();
+
+  const nombre = $("nombre").value.trim();
+  const apellidos = $("apellidos").value.trim();
+  const fecha = $("fecha").value;
+
+  if (!nombre || !apellidos) {
+    alert("Completa el nombre y los apellidos.");
     return;
   }
 
-  document.getElementById("blue-count").textContent = blueCount;
-  document.getElementById("red-count").textContent = redCount;
-  document.getElementById("total-count").textContent =
-    blueCount + redCount;
-}
+  if (!fechaValida(fecha)) {
+    $("errorFecha").textContent =
+      "Introduce una fecha válida y una edad de entre 16 y 100 años.";
+    return;
+  }
 
-// Todavía no se cargan resultados ficticios ni se aceptan votos.
+  $("errorFecha").textContent = "";
+  mostrar("opciones");
+});
+
+document.querySelectorAll("[data-option]").forEach((boton) => {
+  boton.addEventListener("click", () => {
+    opcionElegida = boton.dataset.option;
+    mostrar("preguntas");
+  });
+});
+
+$("preguntasForm").addEventListener("submit", (evento) => {
+  evento.preventDefault();
+
+  if (!opcionElegida) {
+    alert("Selecciona una opción.");
+    mostrar("opciones");
+    return;
+  }
+
+  // Demostración local: no envía ni guarda respuestas personales.
+  participacionesLocales++;
+  $("contador").textContent = participacionesLocales;
+
+  $("datosForm").reset();
+  $("preguntasForm").reset();
+  opcionElegida = null;
+
+  mostrar("resultado");
+});
+
+$("volver").addEventListener("click", () => {
+  mostrar("inicio");
+});
