@@ -2,113 +2,89 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="description" content="Portal de participación y votación">
-  <title>VotoNexo | Votación</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VotaxCuba | Consulta ciudadana</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="script.js" defer></script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#" aria-label="VotoNexo inicio">
-      <span class="brand-icon">V</span>
-      <span>VotoNexo</span>
-    </a>
-    <span class="status"><span class="dot"></span> Portal de votación</span>
+  <header class="header">
+    <h1>VotaxCuba</h1>
+    <p>Portal de consulta digital</p>
   </header>
 
   <main class="container">
-    <section class="intro">
-      <span class="eyebrow">PARTICIPACIÓN DIGITAL</span>
-      <h1>Tu voto,<br><span>tu elección.</span></h1>
-      <p>Participa en la votación y consulta los resultados generales.</p>
+    <section id="inicio" class="panel">
+      <h2>Tu opinión importa</h2>
+      <p>Participa en esta consulta de demostración.</p>
+      <button id="comenzar" class="primary">¿Deseas votar?</button>
+      <p class="notice">Demostración: no se recopilan carnets ni se registra un voto oficial.</p>
     </section>
 
-    <section class="panel" aria-labelledby="vote-title">
-      <h2 id="vote-title">Acceso a la votación</h2>
-      <p class="muted">Introduce el código de participación que recibiste.</p>
+    <section id="formulario" class="panel hidden">
+      <h2>Datos de demostración</h2>
+      <p>Usa datos ficticios. No introduzcas información personal real.</p>
 
-      <form id="vote-form">
-        <label for="vote-code">Código único</label>
-        <input
-          id="vote-code"
-          name="vote-code"
-          type="text"
-          maxlength="100"
-          autocomplete="one-time-code"
-          placeholder="Introduce tu código"
-          required
-        >
+      <form id="datosForm">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" required maxlength="60" autocomplete="off">
 
-        <p class="muted small">
-          La verificación de identidad y del código se habilitará
-          cuando configuremos el servidor seguro.
-        </p>
+        <label for="apellidos">Apellidos</label>
+        <input id="apellidos" required maxlength="100" autocomplete="off">
 
-        <h3>Elige una opción</h3>
-        <div class="choices">
-          <label class="choice blue-choice">
-            <input type="radio" name="vote" value="blue" required>
-            <span class="choice-mark">A</span>
-            <span class="choice-name">Lado azul</span>
-          </label>
+        <label for="fecha">Fecha de nacimiento</label>
+        <input id="fecha" type="date" required>
 
-          <label class="choice red-choice">
-            <input type="radio" name="vote" value="red" required>
-            <span class="choice-mark">R</span>
-            <span class="choice-name">Lado rojo</span>
-          </label>
-        </div>
-
-        <div id="captcha-area">
-          <p class="muted small">
-            Protección antirobot pendiente de configurar.
-          </p>
-        </div>
-
-        <button id="submit-vote" type="submit">
-          Confirmar voto
-        </button>
-
-        <p id="form-message" class="message" role="status"
-           aria-live="polite"></p>
+        <p id="errorFecha" class="error" aria-live="polite"></p>
+        <button class="primary" type="submit">Continuar</button>
       </form>
     </section>
 
-    <section class="results panel">
-      <div class="results-heading">
-        <div>
-          <h2>Resultados generales</h2>
-          <p class="muted">Los totales se mostrarán cuando conectemos
-            la base de datos.</p>
-        </div>
-        <span class="live-label">Resultados</span>
-      </div>
+    <section id="opciones" class="panel hidden">
+      <h2>Elige una opción</h2>
+      <p>Las descripciones son editables en este archivo.</p>
 
-      <div class="result-row">
-        <span>Lado azul</span>
-        <strong id="blue-count">—</strong>
-      </div>
-      <div class="result-row">
-        <span>Lado rojo</span>
-        <strong id="red-count">—</strong>
-      </div>
-      <div class="total-row">
-        <span>Total de votos</span>
-        <strong id="total-count">—</strong>
+      <div class="choices">
+        <button class="choice red" data-option="rojo">
+          <strong>Opción roja</strong>
+          <span id="descripcionRoja">Aquí pondrás la descripción roja.</span>
+        </button>
+
+        <button class="choice blue" data-option="azul">
+          <strong>Opción azul</strong>
+          <span id="descripcionAzul">Aquí pondrás la descripción azul.</span>
+        </button>
       </div>
     </section>
 
-    <p class="privacy-note">
-      No introduzcas documentos personales en esta versión de prueba.
-      La votación aún no está habilitada.
-    </p>
+    <section id="preguntas" class="panel hidden">
+      <h2>Preguntas</h2>
+      <form id="preguntasForm">
+        <label for="pregunta1">1. ¿Qué opinas de esta propuesta?</label>
+        <textarea id="pregunta1" rows="3" maxlength="1000" required></textarea>
+
+        <label for="pregunta2">2. ¿Qué cambiarías?</label>
+        <textarea id="pregunta2" rows="3" maxlength="1000" required></textarea>
+
+        <button class="primary" type="submit">Enviar demostración</button>
+      </form>
+    </section>
+
+    <section id="resultado" class="panel hidden" aria-live="polite">
+      <h2>¡Gracias por participar!</h2>
+      <p>Tu respuesta se ha contado únicamente en esta demostración local.</p>
+      <button id="volver" class="primary">Volver al inicio</button>
+    </section>
+
+    <section class="counter panel">
+      <h3>Participaciones de demostración</h3>
+      <p id="contador">0</p>
+    </section>
   </main>
 
   <footer>
-    <p>VotoNexo · Portal de participación</p>
+    <p>VotaxCuba · Prototipo de demostración</p>
   </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
