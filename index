@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="description" content="Portal de participación y votación">
+  <title>VotoNexo | Votación</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="VotoNexo inicio">
+      <span class="brand-icon">V</span>
+      <span>VotoNexo</span>
+    </a>
+    <span class="status"><span class="dot"></span> Portal de votación</span>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <span class="eyebrow">PARTICIPACIÓN DIGITAL</span>
+      <h1>Tu voto,<br><span>tu elección.</span></h1>
+      <p>Participa en la votación y consulta los resultados generales.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="vote-title">
+      <h2 id="vote-title">Acceso a la votación</h2>
+      <p class="muted">Introduce el código de participación que recibiste.</p>
+
+      <form id="vote-form">
+        <label for="vote-code">Código único</label>
+        <input
+          id="vote-code"
+          name="vote-code"
+          type="text"
+          maxlength="100"
+          autocomplete="one-time-code"
+          placeholder="Introduce tu código"
+          required
+        >
+
+        <p class="muted small">
+          La verificación de identidad y del código se habilitará
+          cuando configuremos el servidor seguro.
+        </p>
+
+        <h3>Elige una opción</h3>
+        <div class="choices">
+          <label class="choice blue-choice">
+            <input type="radio" name="vote" value="blue" required>
+            <span class="choice-mark">A</span>
+            <span class="choice-name">Lado azul</span>
+          </label>
+
+          <label class="choice red-choice">
+            <input type="radio" name="vote" value="red" required>
+            <span class="choice-mark">R</span>
+            <span class="choice-name">Lado rojo</span>
+          </label>
+        </div>
+
+        <div id="captcha-area">
+          <p class="muted small">
+            Protección antirobot pendiente de configurar.
+          </p>
+        </div>
+
+        <button id="submit-vote" type="submit">
+          Confirmar voto
+        </button>
+
+        <p id="form-message" class="message" role="status"
+           aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="results panel">
+      <div class="results-heading">
+        <div>
+          <h2>Resultados generales</h2>
+          <p class="muted">Los totales se mostrarán cuando conectemos
+            la base de datos.</p>
+        </div>
+        <span class="live-label">Resultados</span>
+      </div>
+
+      <div class="result-row">
+        <span>Lado azul</span>
+        <strong id="blue-count">—</strong>
+      </div>
+      <div class="result-row">
+        <span>Lado rojo</span>
+        <strong id="red-count">—</strong>
+      </div>
+      <div class="total-row">
+        <span>Total de votos</span>
+        <strong id="total-count">—</strong>
+      </div>
+    </section>
+
+    <p class="privacy-note">
+      No introduzcas documentos personales en esta versión de prueba.
+      La votación aún no está habilitada.
+    </p>
+  </main>
+
+  <footer>
+    <p>VotoNexo · Portal de participación</p>
+  </footer>
+</body>
+</html>
