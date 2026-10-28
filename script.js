@@ -1,561 +1,339 @@
 
-const $ = (id) => document.getElementById(id);
+"use strict";
 
-const pantallas = ["inicio", "formulario", "opciones", "preguntas", "resultado"];
-const STORAGE_KEY = "votaxcuba_demo_v1";
+const identityForm = document.getElementById("identity-form");
+const birthDateInput = document.getElementById("birth-date");
+const codeSection = document.getElementById("code-section");
+const codePrefixInput = document.getElementById("code-prefix");
+const prefixPreview = document.getElementById("prefix-preview");
+const codeSuffixInput = document.getElementById("code-suffix");
+const identityError = document.getElementById("identity-error");
+const surveySection = document.getElementById("survey-section");
+const surveyForm = document.getElementById("survey-form");
+const questionsContainer = document.getElementById("questions-container");
+const surveyMessage = document.getElementById("survey-message");
 
-let opcionElegida = null;
-let declaracionActual = "";
+const redBar = document.getElementById("red-bar");
+const blueBar = document.getElementById("blue-bar");
+const redResult = document.getElementById("red-result");
+const blueResult = document.getElementById("blue-result");
+const publicOpinions = document.getElementById("public-opinions");
 
-const preguntasComunes = [
-  {
-    id: "urgente",
-    titulo: "¿Cuál es el problema más urgente que enfrenta Cuba?",
-    tipo: "textarea",
-    requerido: true
-  },
-  {
-    id: "primero",
-    titulo: "¿Qué cambio debería realizarse primero?",
-    tipo: "textarea",
-    requerido: true
-  },
-  {
-    id: "metodo",
-    titulo: "¿Qué vía de cambio consideras más adecuada?",
-    tipo: "radio",
-    requerido: true,
-    opciones: [
-      "Elecciones y reformas institucionales",
-      "Diálogo y acuerdos",
-      "Protestas pacíficas",
-      "Una combinación de estas vías",
-      "Otra vía"
-    ]
-  },
-  {
-    id: "libertades",
-    titulo: "¿Qué importancia tienen las libertades individuales en tu decisión?",
-    tipo: "textarea",
-    requerido: true
-  },
-  {
-    id: "contrario",
-    titulo: "¿Qué argumento de la opción contraria te parece razonable?",
-    tipo: "textarea",
-    requerido: true
-  },
-  {
-    id: "mensaje",
-    titulo: "¿Qué mensaje darías a alguien que piensa diferente?",
-    tipo: "textarea",
-    requerido: true
-  }
-];
+let currentPrefix = "";
+let localVotes = { red: 0, blue: 0 };
+let localOpinions = [];
 
-const preguntasRojo = [
-  {
-    id: "motivo",
-    titulo: "¿Cuáles son las principales razones de tu elección?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "positivo",
-    titulo: "¿Qué aspectos del sistema actual consideras positivos?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "cambiar",
-    titulo: "¿Qué aspectos cambiarías o mejorarías?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "revolucion",
-    titulo: "¿Qué significa para ti la Revolución cubana hoy?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "ideales",
-    titulo: "¿Qué ideales de los dirigentes históricos consideras importantes?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "fidel",
-    titulo: "¿Qué opinas de las decisiones de Fidel Castro?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "raul",
-    titulo: "¿Qué opinas de las decisiones de Raúl Castro?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "diazcanel",
-    titulo: "¿Qué opinas de la gestión de Miguel Díaz-Canel?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "economia",
-    titulo: "¿Cuáles consideras que son las principales causas de las dificultades económicas de Cuba?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "bloqueo",
-    titulo: "¿Qué responsabilidad atribuyes al bloqueo o embargo estadounidense?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "gobierno",
-    titulo: "¿Qué responsabilidad atribuyes a las decisiones del Gobierno cubano?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "economiaPlan",
-    titulo: "¿Qué cambios económicos propondrías?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "salarios",
-    titulo: "¿Cómo mejorarías los salarios y el acceso a productos básicos?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "servicios",
-    titulo: "¿Qué cambios propondrías en salud y educación?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "disenso",
-    titulo: "¿Cómo deberían relacionarse el Gobierno y quienes discrepan de él?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "eeuu",
-    titulo: "¿Qué relación debería mantener Cuba con Estados Unidos?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "condiciones",
-    titulo: "¿Qué condiciones facilitarían una mejora de esa relación?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "propuesta",
-    titulo: "¿Qué medidas concretas propondrías para mejorar el futuro del país?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "reconsiderar",
-    titulo: "¿Qué tendría que ocurrir para que reconsideraras tu elección?",
-    tipo: "textarea", requerido: true
-  }
-];
+const questions = {
+  red: [
+    "¿Por qué apoyas la continuidad del Gobierno actual?",
+    "¿Cómo describirías tu vida cotidiana en Cuba?",
+    "¿Qué es lo que más te preocupa de la situación del país?",
+    "¿Qué te gustaría que mejorara en los próximos cinco años?",
+    "¿Tienes oportunidades suficientes para trabajar o estudiar?",
+    "¿Crees que el esfuerzo de las personas se recompensa justamente?",
+    "¿Qué opinas de la corrupción en Cuba?",
+    "¿Sientes que el Gobierno escucha las preocupaciones de la población?",
+    "¿Cuáles son las mayores dificultades de Cuba actualmente?",
+    "¿Qué impacto crees que tiene el embargo de Estados Unidos?",
+    "¿Qué decisiones del Gobierno deberían cambiar?",
+    "¿Qué aspectos de las decisiones de Fidel Castro valoras o cuestionas?",
+    "¿Qué opinas del papel de Raúl Castro en la historia reciente?",
+    "¿Qué debería hacer el liderazgo actual para mejorar la vida diaria?",
+    "¿Qué aspectos del sistema actual consideras importante conservar?",
+    "¿Qué cambio dentro del sistema ayudaría a vivir mejor?",
+    "¿Qué oportunidades necesitan los jóvenes cubanos?",
+    "¿Cómo debería ser la relación de Cuba con Estados Unidos?",
+    "¿Qué cambiaría para Cuba si se normalizaran las relaciones con Estados Unidos?",
+    "¿Qué tendría que ocurrir para que tuvieras más confianza en el futuro?"
+  ],
+  blue: [
+    "¿Por qué crees que Cuba necesita un nuevo Gobierno?",
+    "¿Cómo describirías tu vida cotidiana en Cuba?",
+    "¿Qué es lo que más te preocupa de la situación del país?",
+    "¿Qué te gustaría que mejorara en los próximos cinco años?",
+    "¿Tienes oportunidades suficientes para trabajar o estudiar?",
+    "¿Crees que el esfuerzo de las personas se recompensa justamente?",
+    "¿Qué opinas de la corrupción y de quién debe responder por ella?",
+    "¿Sientes que las autoridades escuchan las preocupaciones de la población?",
+    "¿Cuáles son las mayores dificultades de Cuba actualmente?",
+    "¿Qué impacto crees que tiene el embargo de Estados Unidos?",
+    "¿Qué responsabilidades debería asumir el Gobierno actual?",
+    "¿Qué aspectos de las decisiones de Fidel Castro valoras o cuestionas?",
+    "¿Qué opinas del papel de Raúl Castro en la historia reciente?",
+    "¿Qué debería cambiar primero un nuevo Gobierno?",
+    "¿Qué aspectos de la vida cubana deberían protegerse durante un cambio?",
+    "¿Cómo se podría evitar que un nuevo Gobierno repita los mismos errores?",
+    "¿Qué oportunidades necesitan los jóvenes cubanos?",
+    "¿Cómo debería ser la relación de Cuba con Estados Unidos?",
+    "¿Qué tipo de ayuda internacional sería beneficiosa para Cuba?",
+    "¿Qué garantías deberían existir para quienes piensen diferente?"
+  ]
+};
 
-const preguntasAzul = [
-  {
-    id: "motivo",
-    titulo: "¿Cuáles son las principales razones de tu elección?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "sistema",
-    titulo: "¿Qué aspectos del sistema político actual consideras que necesitan cambiar?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "conservar",
-    titulo: "¿Qué aspectos de la sociedad cubana conservarías?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "modelo",
-    titulo: "¿Qué tipo de sistema político te gustaría que tuviera Cuba?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "derechos",
-    titulo: "¿Qué derechos y libertades debería garantizar un nuevo Gobierno?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "dirigentes",
-    titulo: "¿Cómo deberían elegirse los dirigentes y exigírseles responsabilidades?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "instituciones",
-    titulo: "¿Qué instituciones deberían mantenerse, reformarse o sustituirse?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "economia",
-    titulo: "¿Cuáles consideras que son las principales causas de las dificultades económicas de Cuba?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "bloqueo",
-    titulo: "¿Qué responsabilidad atribuyes al embargo estadounidense?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "gobierno",
-    titulo: "¿Qué responsabilidad atribuyes a las decisiones económicas del Gobierno cubano?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "economiaPlan",
-    titulo: "¿Qué cambios económicos propondrías?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "salarios",
-    titulo: "¿Cómo mejorarías los salarios y el acceso a productos básicos?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "servicios",
-    titulo: "¿Qué cambios propondrías en salud y educación?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "proteccion",
-    titulo: "¿Cómo protegerías a quienes apoyan al Gobierno actual y a quienes se oponen?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "eeuu",
-    titulo: "¿Qué relación debería mantener Cuba con Estados Unidos?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "ayuda",
-    titulo: "¿Qué condiciones deberían exigirse a la ayuda internacional?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "riesgos",
-    titulo: "¿Qué riesgos tendría una transición política y cómo podrían reducirse?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "participacion",
-    titulo: "¿Qué formas de participación ciudadana consideras legítimas y eficaces?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "reconsiderar",
-    titulo: "¿Qué tendría que ocurrir para que reconsideraras tu elección?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "cincoAnos",
-    titulo: "¿Cómo imaginas Cuba cinco años después de una transición?",
-    tipo: "textarea", requerido: true
-  },
-  {
-    id: "protesta",
-    titulo: "¿Participarías en una protesta pacífica?",
-    tipo: "radio", requerido: true,
-    opciones: ["Sí", "No", "Prefiero no responder"]
-  },
-  {
-    id: "protestaMotivo",
-    titulo: "Si quieres, explica por qué participarías o por qué no.",
-    tipo: "textarea", requerido: false
-  },
-  {
-    id: "cambio",
-    titulo: "¿Qué vía de cambio político prefieres?",
-    tipo: "radio", requerido: true,
-    opciones: [
-      "Elecciones y reformas institucionales",
-      "Diálogo y acuerdos",
-      "Protestas pacíficas",
-      "Una combinación de estas vías",
-      "Otra vía"
-    ]
-  }
-];
-
-function leerDatos() {
-  try {
-    const datos = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (
-      datos &&
-      Array.isArray(datos.votos) &&
-      Array.isArray(datos.declaraciones)
-    ) return datos;
-  } catch (_) {}
-  return { votos: [], declaraciones: [] };
+function todayAsDate() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-function guardarDatos(datos) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(datos));
-}
+function parseDateOnly(value) {
+  if (!value) return null;
 
-function mostrar(id) {
-  pantallas.forEach((pantalla) => {
-    $(pantalla).classList.toggle("hidden", pantalla !== id);
-  });
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
+  const parts = value.split("-").map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
 
-function calcularFechaNacimiento(valor) {
-  if (!valor) return { valida: false, prefijo: "" };
-
-  const [anio, mes, dia] = valor.split("-").map(Number);
-  const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+  const [year, month, day] = parts;
+  const date = new Date(year, month - 1, day);
 
   if (
-    fecha.getUTCFullYear() !== anio ||
-    fecha.getUTCMonth() !== mes - 1 ||
-    fecha.getUTCDate() !== dia
-  ) return { valida: false, prefijo: "" };
-
-  const hoy = new Date();
-  let edad = hoy.getFullYear() - anio;
-
-  if (
-    hoy.getMonth() + 1 < mes ||
-    (hoy.getMonth() + 1 === mes && hoy.getDate() < dia)
-  ) edad--;
-
-  if (edad < 16 || edad > 100) {
-    return { valida: false, prefijo: "" };
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
   }
 
-  const prefijo =
-    String(anio).slice(-2) +
-    String(mes).padStart(2, "0") +
-    String(dia).padStart(2, "0");
-
-  return { valida: true, prefijo };
+  return date;
 }
 
-$("fecha").addEventListener("change", (evento) => {
-  const valor = evento.target.value;
-  const salida = $("prefijoFecha");
+function calculateAge(birthDate) {
+  const today = todayAsDate();
+  let age = today.getFullYear() - birthDate.getFullYear();
 
-  if (!valor) {
-    salida.textContent = "";
+  const birthdayHasNotOccurred =
+    today.getMonth() < birthDate.getMonth() ||
+    (
+      today.getMonth() === birthDate.getMonth() &&
+      today.getDate() < birthDate.getDate()
+    );
+
+  if (birthdayHasNotOccurred) age--;
+
+  return age;
+}
+
+function makePrefix(birthDate) {
+  const year = String(birthDate.getFullYear()).slice(-2);
+  const month = String(birthDate.getMonth() + 1).padStart(2, "0");
+  const day = String(birthDate.getDate()).padStart(2, "0");
+
+  return `${year}${month}${day}`;
+}
+
+function updateBirthDateUI() {
+  identityError.textContent = "";
+  codeSuffixInput.value = "";
+
+  const birthDate = parseDateOnly(birthDateInput.value);
+
+  if (!birthDate) {
+    codeSection.hidden = true;
+    currentPrefix = "";
     return;
   }
 
-  const resultado = calcularFechaNacimiento(valor);
-  salida.textContent = resultado.valida
-    ? `Prefijo de fecha de demostración: ${resultado.prefijo}`
-    : "Fecha inválida o edad fuera del intervalo de 16 a 100 años.";
-});
+  const age = calculateAge(birthDate);
 
-$("comenzar").addEventListener("click", () => {
-  if (window.confirm("¿Deseas participar en esta consulta de demostración?")) {
-    mostrar("formulario");
-  }
-});
-
-$("datosForm").addEventListener("submit", (evento) => {
-  evento.preventDefault();
-
-  const fecha = $("fecha").value;
-  if (fecha && !calcularFechaNacimiento(fecha).valida) {
-    alert("Comprueba la fecha de nacimiento.");
+  if (age < 16 || age > 100) {
+    codeSection.hidden = true;
+    currentPrefix = "";
+    identityError.textContent =
+      "La edad debe estar entre 16 y 100 años. Comprueba la fecha introducida.";
     return;
   }
 
-  mostrar("opciones");
+  currentPrefix = makePrefix(birthDate);
+  codePrefixInput.value = currentPrefix;
+  prefixPreview.textContent = currentPrefix;
+  codeSection.hidden = false;
+}
+
+birthDateInput.addEventListener("change", updateBirthDateUI);
+
+codeSuffixInput.addEventListener("input", () => {
+  // Solo se permiten cinco dígitos.
+  codeSuffixInput.value = codeSuffixInput.value
+    .replace(/\D/g, "")
+    .slice(0, 5);
+
+  identityError.textContent = "";
 });
 
-function crearCampo(pregunta) {
-  const grupo = document.createElement("div");
-  grupo.className = "question";
-  const etiqueta = document.createElement("label");
-  etiqueta.textContent = pregunta.titulo;
-  etiqueta.htmlFor = `q_${pregunta.id}`;
-  grupo.appendChild(etiqueta);
+function renderQuestions(position) {
+  questionsContainer.replaceChildren();
 
-  if (pregunta.tipo === "textarea") {
-    const area = document.createElement("textarea");
-    area.id = `q_${pregunta.id}`;
-    area.name = pregunta.id;
-    area.rows = 3;
-    area.maxLength = 1200;
-    area.required = Boolean(pregunta.requerido);
-    grupo.appendChild(area);
-  } else {
-    const fieldset = document.createElement("fieldset");
-    fieldset.id = `q_${pregunta.id}`;
-    pregunta.opciones.forEach((opcion, indice) => {
-      const fila = document.createElement("label");
-      fila.className = "radio-line";
-      const radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = pregunta.id;
-      radio.value = opcion;
-      radio.required = Boolean(pregunta.requerido && indice === 0);
-      fila.append(radio, document.createTextNode(opcion));
-      fieldset.appendChild(fila);
+  questions[position].forEach((questionText, index) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "question";
+
+    const label = document.createElement("label");
+    const textarea = document.createElement("textarea");
+    const counter = document.createElement("p");
+
+    const fieldId = `answer-${index + 1}`;
+
+    label.htmlFor = fieldId;
+    label.textContent = `${index + 1}. ${questionText}`;
+
+    textarea.id = fieldId;
+    textarea.name = fieldId;
+    textarea.maxLength = 500;
+    textarea.rows = 4;
+    textarea.placeholder = "Escribe tu opinión (máximo 500 caracteres)";
+
+    counter.className = "help-text";
+    counter.textContent = "0/500 caracteres";
+
+    textarea.addEventListener("input", () => {
+      counter.textContent = `${textarea.value.length}/500 caracteres`;
     });
-    grupo.appendChild(fieldset);
-  }
 
-  return grupo;
+    wrapper.append(label, textarea, counter);
+    questionsContainer.append(wrapper);
+  });
 }
 
-function iniciarPreguntas(opcion) {
-  opcionElegida = opcion;
-  const preguntas = [
-    ...(opcion === "rojo" ? preguntasRojo : preguntasAzul),
-    ...preguntasComunes
-  ];
-
-  $("tituloPreguntas").textContent =
-    opcion === "rojo" ? "Formulario — opción roja" : "Formulario — opción azul";
-
-  $("introPreguntas").textContent =
-    opcion === "rojo"
-      ? "Explica tus razones, los aspectos que apoyas y los cambios que propondrías."
-      : "Explica por qué deseas un cambio, qué alternativa propones y cómo protegerías los derechos de todos.";
-
-  const contenedor = $("camposPreguntas");
-  contenedor.replaceChildren();
-  preguntas.forEach((pregunta) => contenedor.appendChild(crearCampo(pregunta)));
-  $("consentirPublicacion").checked = false;
-  mostrar("preguntas");
-}
-
-document.querySelectorAll("[data-option]").forEach((boton) => {
-  boton.addEventListener("click", () => iniciarPreguntas(boton.dataset.option));
+document.querySelectorAll('input[name="position"]').forEach((radio) => {
+  radio.addEventListener("change", () => {
+    renderQuestions(radio.value);
+  });
 });
 
-function respuestasFormulario() {
-  const respuestas = [];
-  const campos = $("camposPreguntas").querySelectorAll("textarea, fieldset");
+identityForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  identityError.textContent = "";
 
-  campos.forEach((campo) => {
-    let valor = "";
-    if (campo.tagName === "TEXTAREA") {
-      valor = campo.value.trim();
-    } else {
-      const seleccionado = campo.querySelector("input:checked");
-      valor = seleccionado ? seleccionado.value : "";
-    }
-    if (valor) {
-      const etiqueta = campo.closest(".question")?.querySelector("label");
-      respuestas.push({ pregunta: etiqueta?.textContent || "", respuesta: valor });
-    }
-  });
+  const firstName = document.getElementById("first-name").value.trim();
+  const lastName = document.getElementById("last-name").value.trim();
+  const birthDate = parseDateOnly(birthDateInput.value);
+  const suffix = codeSuffixInput.value.trim();
 
-  return respuestas;
-}
-
-function crearDeclaracion(opcion, respuestas) {
-  const introduccion = opcion === "rojo"
-    ? "Yo pienso que la continuidad del sistema político cubano debe valorarse teniendo en cuenta sus logros, sus dificultades y los cambios que considero necesarios."
-    : "Yo pienso que Cuba necesita evaluar alternativas políticas y económicas, protegiendo los derechos de toda la población durante cualquier cambio.";
-
-  const partes = [introduccion];
-
-  respuestas.forEach(({ pregunta, respuesta }) => {
-    partes.push(`${pregunta} Mi respuesta es: ${respuesta}`);
-  });
-
-  return partes.join("\n\n");
-}
-
-$("preguntasForm").addEventListener("submit", (evento) => {
-  evento.preventDefault();
-  if (!opcionElegida) return;
-
-  const respuestas = respuestasFormulario();
-  const declaracion = crearDeclaracion(opcionElegida, respuestas);
-  const autoriza = $("consentirPublicacion").checked;
-
-  declaracionActual = declaracion;
-  $("declaracionPrevia").textContent = declaracion;
-  $("estadoPublicacion").textContent = autoriza
-    ? "La declaración se añadirá a la lista local de esta demostración."
-    : "La declaración no se publicará en la lista. Solo se muestra aquí para que puedas leerla.";
-
-  const datos = leerDatos();
-  datos.votos.push(opcionElegida);
-
-  if (autoriza) {
-    datos.declaraciones.unshift({
-      opcion: opcionElegida,
-      texto: declaracion,
-      fecha: new Date().toISOString()
-    });
-  }
-
-  guardarDatos(datos);
-  actualizarResultados();
-  mostrar("resultado");
-});
-
-function actualizarResultados() {
-  const datos = leerDatos();
-  const rojos = datos.votos.filter((v) => v === "rojo").length;
-  const azules = datos.votos.filter((v) => v === "azul").length;
-  const total = rojos + azules;
-  const pctRojo = total ? Math.round(rojos / total * 100) : 0;
-  const pctAzul = total ? 100 - pctRojo : 0;
-
-  $("totalVotos").textContent = `${total} participaciones locales`;
-  $("totalRojo").textContent = `Rojo: ${rojos} (${pctRojo}%)`;
-  $("totalAzul").textContent = `Azul: ${azules} (${pctAzul}%)`;
-  $("barraRoja").style.width = `${pctRojo}%`;
-  $("barraAzul").style.width = `${pctAzul}%`;
-  $("barraRoja").style.display = total ? "block" : "none";
-  $("barraAzul").style.display = total ? "block" : "none";
-  mostrarDeclaraciones("todos");
-}
-
-function mostrarDeclaraciones(filtro) {
-  const datos = leerDatos();
-  const lista = $("listaDeclaraciones");
-  const declaraciones = datos.declaraciones.filter((d) =>
-    filtro === "todos" || d.opcion === filtro
-  );
-
-  $("tituloDeclaraciones").textContent =
-    filtro === "rojo" ? "Declaraciones de opción roja" :
-    filtro === "azul" ? "Declaraciones de opción azul" :
-    "Declaraciones autorizadas";
-
-  lista.replaceChildren();
-
-  if (!declaraciones.length) {
-    const p = document.createElement("p");
-    p.className = "help";
-    p.textContent = "No hay declaraciones autorizadas en esta categoría en este navegador.";
-    lista.appendChild(p);
+  if (!firstName || !lastName) {
+    identityError.textContent = "Completa tu nombre y apellidos.";
     return;
   }
 
-  declaraciones.forEach((declaracion) => {
-    const article = document.createElement("article");
-    article.className = `statement ${declaracion.opcion}`;
+  if (!birthDate) {
+    identityError.textContent = "Selecciona una fecha de nacimiento válida.";
+    return;
+  }
 
-    const etiqueta = document.createElement("strong");
-    etiqueta.textContent = declaracion.opcion === "rojo" ? "Opción roja" : "Opción azul";
+  const age = calculateAge(birthDate);
 
-    const texto = document.createElement("p");
-    texto.textContent = declaracion.texto;
+  if (age < 16 || age > 100) {
+    identityError.textContent = "La edad debe estar entre 16 y 100 años.";
+    return;
+  }
 
-    article.append(etiqueta, texto);
-    lista.appendChild(article);
+  if (!currentPrefix || !/^\d{5}$/.test(suffix)) {
+    identityError.textContent =
+      "Completa los cinco dígitos restantes del código.";
+    return;
+  }
+
+  // No se guarda ni se envía el nombre, la fecha o el código.
+  identityForm.reset();
+  codeSection.hidden = true;
+  currentPrefix = "";
+
+  surveySection.hidden = false;
+  surveySection.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+surveyForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  surveyMessage.textContent = "";
+
+  const selected = document.querySelector('input[name="position"]:checked');
+
+  if (!selected) {
+    surveyMessage.textContent = "Selecciona una opción antes de enviar.";
+    return;
+  }
+
+  const answers = Array.from(
+    questionsContainer.querySelectorAll("textarea")
+  )
+    .map((field, index) => ({
+      question: questions[selected.value][index],
+      answer: field.value.trim()
+    }))
+    .filter((item) => item.answer.length > 0);
+
+  if (answers.length === 0) {
+    surveyMessage.textContent =
+      "Escribe al menos una respuesta antes de enviar.";
+    return;
+  }
+
+  // Demo local: no se envía nada a Internet.
+  localVotes[selected.value]++;
+
+  answers.forEach((item) => {
+    localOpinions.push({
+      position: selected.value,
+      text: `Yo pienso que ${item.answer}`,
+      question: item.question
+    });
+  });
+
+  updateResults();
+  renderPublicOpinions();
+
+  surveyMessage.textContent =
+    "Tus respuestas se han guardado solo en esta sesión del navegador. No se han enviado a un servidor.";
+
+  surveyForm.reset();
+  questionsContainer.replaceChildren();
+
+  document.querySelectorAll('input[name="position"]').forEach((radio) => {
+    radio.checked = false;
+  });
+});
+
+function updateResults() {
+  const total = localVotes.red + localVotes.blue;
+
+  const redPercent = total ? Math.round((localVotes.red / total) * 100) : 0;
+  const bluePercent = total ? 100 - redPercent : 0;
+
+  redBar.style.width = `${redPercent}%`;
+  blueBar.style.width = `${bluePercent}%`;
+
+  redResult.textContent = `Continuidad: ${localVotes.red} (${redPercent}%)`;
+  blueResult.textContent = `Cambio: ${localVotes.blue} (${bluePercent}%)`;
+}
+
+function renderPublicOpinions() {
+  publicOpinions.replaceChildren();
+
+  if (localOpinions.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "help-text";
+    empty.textContent = "Todavía no hay opiniones en esta sesión.";
+    publicOpinions.append(empty);
+    return;
+  }
+
+  localOpinions.slice().reverse().forEach((opinion) => {
+    const card = document.createElement("article");
+    card.className = "opinion-card";
+
+    const heading = document.createElement("strong");
+    heading.textContent =
+      opinion.position === "red"
+        ? "Opinión — Continuidad"
+        : "Opinión — Cambio";
+
+    const question = document.createElement("p");
+    question.textContent = opinion.question;
+
+    const answer = document.createElement("p");
+    answer.textContent = opinion.text;
+
+    card.append(heading, question, answer);
+    publicOpinions.append(card);
   });
 }
 
-$("verRojo").addEventListener("click", () => mostrarDeclaraciones("rojo"));
-$("verAzul").addEventListener("click", () => mostrarDeclaraciones("azul"));
-
-$("volver").addEventListener("click", () => {
-  $("datosForm").reset();
-  $("preguntasForm").reset();
-  $("prefijoFecha").textContent = "";
-  opcionElegida = null;
-  mostrar("inicio");
-});
-
-actualizarResultados();
+updateResults();
+renderPublicOpinions();
