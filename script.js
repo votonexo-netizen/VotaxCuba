@@ -259,10 +259,23 @@ surveyForm.addEventListener("submit", (event) => {
     }))
     .filter((item) => item.answer.length > 0);
 
-  if (answers.length === 0) {
-    surveyMessage.textContent =
-      "Escribe al menos una respuesta antes de enviar.";
-    return;
+  if (answers.length !== 20) {
+  surveyMessage.textContent =
+    "Debes responder las 20 preguntas antes de enviar tus opiniones.";
+
+  const firstEmpty = Array.from(
+    questionsContainer.querySelectorAll("textarea")
+  ).find((field) => field.value.trim() === "");
+
+  if (firstEmpty) {
+    firstEmpty.focus();
+    firstEmpty.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }
+
+  return;
   }
 
   // Demo local: no se envía nada a Internet.
