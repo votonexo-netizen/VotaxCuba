@@ -4,14 +4,16 @@
 const SUPABASE_FUNCTION_URL =
   "https://dqylqfjevffjiyjeyfsz.supabase.co/functions/v1/registrar-voto";
 
-const SUPABASE_URL = "https://dqylqfjevffjiyjeyfsz.supabase.co";
+const SUPABASE_URL =
+  "https://dqylqfjevffjiyjeyfsz.supabase.co";
 
-// Conserva aquí tu clave sb_publishable_ actual.
 const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_VFDtlMisspOg_thRYF7iag_XvvKDqVl";
 
 const homeSection = document.getElementById("home-section");
 const identityForm = document.getElementById("identity-form");
+const firstNameInput = document.getElementById("first-name");
+const lastNameInput = document.getElementById("last-name");
 const birthDateInput = document.getElementById("birth-date");
 const codeSection = document.getElementById("code-section");
 const codePrefixInput = document.getElementById("code-prefix");
@@ -35,8 +37,9 @@ const showRedOpinionsButton = document.getElementById("show-red-opinions");
 const showBlueOpinionsButton = document.getElementById("show-blue-opinions");
 
 let currentToken = "";
+let currentName = "";
 let selectedPosition = null;
-let allOpinions = [];
+let verificationInProgress = false;
 
 const questions = {
   red: [
@@ -84,6 +87,13 @@ const questions = {
     "¿Qué garantías deberían existir para quienes piensen diferente?"
   ]
 };
+
+function normalizeName(value) {
+  return String(value ?? "")
+    .normalize("NFC")
+    .trim()
+    .replace(/\s+/g, " ");
+}
 
 function parseDateOnly(value) {
   if (!value) return null;
@@ -162,6 +172,28 @@ codeSuffixInput?.addEventListener("input", () => {
   identityError.textContent = "";
 });
 
+async function sendToServer(payload) {
+  const response = await fetch(SUPABASE_FUNCTION_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_PUBLISHABLE_KEY,
+      "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok || result.ok !== true) {
+    throw new Error(
+      result.error || "No se pudo completar la solicitud."
+    );
+  }
+
+  return result;
+}
+
 function renderQuestions(position) {
   selectedPosition = position;
   questionsContainer.replaceChildren();
@@ -192,7 +224,8 @@ function renderQuestions(position) {
     counter.textContent = "0/500 caracteres";
 
     textarea.addEventListener("input", () => {
-      counter.textContent = `${textarea.value.length}/500 caracteres`;
+      counter.textContent =
+        `${textarea.value.length}/500 caracteres`;
     });
 
     wrapper.append(label, textarea, counter);
@@ -206,11 +239,30 @@ document.querySelectorAll('input[name="position"]').forEach((radio) => {
   });
 });
 
-identityForm?.addEventListener("submit", (event) => {
+// Verifica el nombre y el código ANTES de mostrar las preguntas.
+identityForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
+
+  if (verificationInProgress) return;
+
   identityError.textContent = "";
 
-  const date = parseDateOnly(birthDateInput.value);
+  const firstName = normalizeName(firstNameInput?.value);
+  const lastName = normalizeName(lastNameInput?.value);
+  const fullName = normalizeName(`${firstName} ${lastName}`);
+  const date = parseDateOnly(birthDateInput?.value);
+
+  if (!firstName || !lastName || fullName.length < 2) {
+    identityError.textContent =
+      "Introduce tu nombre y todos tus apellidos.";
+    return;
+  }
+
+  if (fullName.length > 200) {
+    identityError.textContent =
+      "El nombre completo no puede superar 200 caracteres.";
+    return;
+  }
 
   if (!date) {
     identityError.textContent =
@@ -234,16 +286,51 @@ identityForm?.addEventListener("submit", (event) => {
     return;
   }
 
-  // El código completo se envía al servidor al votar.
-  // Nombre, apellidos y fecha no se envían.
-  currentToken = codePrefixInput.value + suffix;
+  const token = codePrefixInput.value + suffix;
 
-  homeSection.hidden = true;
-  surveySection.hidden = false;
-  surveySection.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
+  verificationInProgress = true;
+
+  const submitButton = identityForm.querySelector(
+    'button[type="submit"], input[type="submit"]'
+  );
+
+  if (submitButton) submitButton.disabled = true;
+
+  identityError.textContent = "Comprobando nombre y código…";
+
+  try {
+    await sendToServer({
+      accion: "verificar",
+      token,
+      nombre: fullName
+    });
+
+    currentToken = token;
+    currentName = fullName;
+
+    identityError.textContent = "";
+
+    homeSection.hidden = true;
+    surveySection.hidden = false;
+
+    surveySection.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  } catch (error) {
+    identityError.textContent =
+      error instanceof Error
+        ? error.message
+        : "No se pudieron verificar los datos.";
+
+    currentToken = "";
+    currentName = "";
+
+    // La persona permanece en el formulario de identificación.
+  } finally {
+    verificationInProgress = false;
+    if (submitButton) submitButton.disabled = false;
+  }
 });
 
 surveyForm?.addEventListener("submit", async (event) => {
@@ -253,6 +340,14 @@ surveyForm?.addEventListener("submit", async (event) => {
   const selected = document.querySelector(
     'input[name="position"]:checked'
   );
+
+  if (!currentToken || !currentName) {
+    surveyMessage.textContent =
+      "Primero debes verificar tu nombre y código.";
+    surveySection.hidden = true;
+    homeSection.hidden = false;
+    return;
+  }
 
   if (!selected || !selectedPosition) {
     surveyMessage.textContent =
@@ -285,28 +380,20 @@ surveyForm?.addEventListener("submit", async (event) => {
 
   surveyMessage.textContent = "Enviando respuestas…";
 
+  const submitButton = surveyForm.querySelector(
+    'button[type="submit"], input[type="submit"]'
+  );
+
+  if (submitButton) submitButton.disabled = true;
+
   try {
-    const response = await fetch(SUPABASE_FUNCTION_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_PUBLISHABLE_KEY,
-        "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
-      },
-      body: JSON.stringify({
-        token: currentToken,
-        posicion: selectedPosition,
-        respuestas: answers
-      })
+    await sendToServer({
+      accion: "registrar",
+      token: currentToken,
+      nombre: currentName,
+      posicion: selectedPosition,
+      respuestas: answers
     });
-
-    const result = await response.json().catch(() => ({}));
-
-    if (!response.ok || result.ok !== true) {
-      surveyMessage.textContent =
-        result.error || "No se pudieron registrar las respuestas.";
-      return;
-    }
 
     surveyMessage.textContent =
       "Respuestas registradas correctamente. Gracias por participar.";
@@ -319,6 +406,7 @@ surveyForm?.addEventListener("submit", async (event) => {
     });
 
     currentToken = "";
+    currentName = "";
     selectedPosition = null;
 
     await loadPublicOpinions();
@@ -326,15 +414,23 @@ surveyForm?.addEventListener("submit", async (event) => {
 
     surveySection.hidden = true;
     homeSection.hidden = false;
+
+    identityForm?.reset();
+    if (codeSection) codeSection.hidden = true;
+
     homeSection.scrollIntoView({
       behavior: "smooth",
       block: "start"
     });
   } catch (error) {
-    console.error("Error de conexión al enviar la encuesta.");
-
     surveyMessage.textContent =
-      "No se pudo conectar con el servidor. Inténtalo más tarde.";
+      error instanceof Error
+        ? error.message
+        : "No se pudieron registrar las respuestas.";
+
+    // Si falla el registro, conserva las respuestas para reintentar.
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 });
 
@@ -342,7 +438,9 @@ cancelSurveyButton?.addEventListener("click", () => {
   surveyForm.reset();
   questionsContainer.replaceChildren();
   surveyMessage.textContent = "";
+
   currentToken = "";
+  currentName = "";
   selectedPosition = null;
 
   document.querySelectorAll('input[name="position"]').forEach((radio) => {
@@ -351,6 +449,7 @@ cancelSurveyButton?.addEventListener("click", () => {
 
   surveySection.hidden = true;
   homeSection.hidden = false;
+
   homeSection.scrollIntoView({
     behavior: "smooth",
     block: "start"
@@ -386,7 +485,6 @@ async function loadPublicOpinions(positionFilter = null) {
     }
 
     const data = await response.json();
-    allOpinions = data;
 
     if (!data.length) {
       const empty = document.createElement("p");
@@ -448,7 +546,10 @@ async function loadVoteCounts() {
     const blueCount = data.filter((item) => item.posicion === "blue").length;
     const total = redCount + blueCount;
 
-    const redPercent = total ? Math.round((redCount / total) * 100) : 0;
+    const redPercent = total
+      ? Math.round((redCount / total) * 100)
+      : 0;
+
     const bluePercent = total ? 100 - redPercent : 0;
 
     if (totalVotesElement) {
@@ -456,11 +557,13 @@ async function loadVoteCounts() {
     }
 
     if (redResult) {
-      redResult.textContent = `Votos rojos: ${redCount} (${redPercent}%)`;
+      redResult.textContent =
+        `Votos rojos: ${redCount} (${redPercent}%)`;
     }
 
     if (blueResult) {
-      blueResult.textContent = `Votos azules: ${blueCount} (${bluePercent}%)`;
+      blueResult.textContent =
+        `Votos azules: ${blueCount} (${bluePercent}%)`;
     }
 
     if (redBar) redBar.style.width = `${redPercent}%`;
